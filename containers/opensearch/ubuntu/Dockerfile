@@ -9,14 +9,14 @@
 #       --build-arg BASE_IMAGE="ubuntu" \
 #       --build-arg BASE_IMAGE_TAG="20.04" \
 #       --build-arg TARGET_IMAGE_NAME="raymondstrose/opensearch" \
-#       --build-arg TARGET_IMAGE_TAG="7.9.3" \
-#       --build-arg OPENSEARCH_VERSION="7.9.3" \
-#       -t raymondstrose/opensearch:7.9.3 .
+#       --build-arg TARGET_IMAGE_TAG="3.0.0" \
+#       --build-arg OPENSEARCH_VERSION="3.0.0" \
+#       -t raymondstrose/opensearch:3.0.0 .
 #
 
 ARG	BASE_IMAGE="ubuntu"
 ARG	BASE_IMAGE_TAG="20.04"
-ARG	OPENSEARCH_VERSION="7.9.3"
+ARG	OPENSEARCH_VERSION="3.0.0"
 ARG TARGET_IMAGE_NAME
 ARG TARGET_IMAGE_TAG
 ARG UID=1001
