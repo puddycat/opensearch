@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch/ubuntu/opt/bin/healthcheck
+#
+# raymondstrose@hotmail.com
+#
+
+set -o errexit;
+set -o nounset;
+set -o pipefail;
+# set -o xtrace; # Uncomment this line for debugging purposes
+
+# Load libraries
+. /opt/lib/opensearch;
+
+# Load Opensearch environment variables
+. /opt/lib/environment;
+
+opensearch_healthcheck;

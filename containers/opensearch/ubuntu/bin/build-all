@@ -1,0 +1,24 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch/ubuntu/bin/build-all
+#
+# raymondstrose@hotmail.com
+#
+#   Build Opensearch Docker images.
+#
+
+build_versions ()
+{
+	cat <<-EOF
+		8.18.8
+		8.19.7
+		9.1.6
+		9.2.0
+		9.2.1
+		EOF
+}
+
+for name in $(build_versions); do
+	docker system prune --all --force;
+	bin/build --target-image-tag=$name;
+done;

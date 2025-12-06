@@ -1,0 +1,55 @@
+#! /usr/bin/env bash
+#
+# /opt/bin/opensearch
+#
+# raymondstrose@hotmail.com
+#
+
+# shellcheck disable=SC1091
+
+set -o errexit;
+set -o nounset;
+set -o pipefail;
+#set -o xtrace;
+
+# Load libraries
+. /opt/lib/opensearch;
+
+# Load environment
+. /opt/lib/environment;
+
+#print_welcome_page;
+
+# We add the copy from default config in the entrypoint to not break users 
+# bypassing the setup.sh logic. If the file already exists do not overwrite (in
+# case someone mounts a configuration file in /opt/opensearch/config)
+debug "Copying files from $DB_DEFAULT_CONF_DIR to $DB_CONF_DIR";
+cp -nr "$DB_DEFAULT_CONF_DIR"/. "$DB_CONF_DIR";
+
+if ! is_dir_empty "$DB_DEFAULT_PLUGINS_DIR"; then
+	debug "Copying plugins from $DB_DEFAULT_PLUGINS_DIR to $DB_PLUGINS_DIR";
+
+# Copy the plugins installed by default to the plugins directory
+# If there is already a plugin with the same name in the plugins folder do nothing
+	for plugin_path in "${DB_DEFAULT_PLUGINS_DIR}"/*; do
+		plugin_name="$(basename "$plugin_path")";
+		plugin_moved_path="${DB_PLUGINS_DIR}/${plugin_name}";
+
+		if ! [[ -d "$plugin_moved_path" ]]; then
+			cp -r "$plugin_path" "$plugin_moved_path" ;
+		fi;
+	done;
+fi;
+
+if [[ "$1" = "/opt/bin/run" ]]; then
+	info "** Starting Opensearch setup **";
+	/opt/bin/setup;
+	info "** Opensearch setup finished! **";
+fi;
+
+info "Environment:";
+info "$(set | grep '^[A-Za-z]*=' | awk '{ printf("    %s=%s\n", $1, $2) }' FS==)";
+#info "$(set | awk '/^[A-Za-z]*=/  { printf("    %s=%s\n", $1, $2) }' FS==)";
+
+echo "";
+exec "$@";

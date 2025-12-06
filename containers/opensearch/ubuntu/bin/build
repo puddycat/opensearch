@@ -1,0 +1,442 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearchbin/build
+#
+# raymondstrose@hotmail.com
+#
+#   Build an Opensearch Docker image.
+#
+
+append () { sed -e "s?\$?$@?"; }
+prepend () { sed -e "s?^?$@?"; }
+indent () { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "    "; }
+error () { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: error: " >&2; }
+warning () { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: warning: " >&2; }
+notice () { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: notice: " >&2; }
+info () { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: info: " >&2; }
+verbose () { $VERBOSE_MODE && { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: verbose: " >&2; } }
+debug () { $DEBUG_MODE && { { if [ $# -ne 0 ]; then echo -e "$@"; else cat; fi; } | prepend "$PROGNAME: debug: " >&2; } }
+
+function execute ()
+{
+	declare -a params;
+
+	for param; do
+		if [[ -z "${param}" || "${param}" =~ [^A-Za-z0-9_@%+=:,./-] ]]; then
+			params+=("'${param//\'/\'\"\'\"\'}'");
+		else
+			params+=("${param}");
+		fi;
+	done;
+
+	debug "${params[*]}";
+	eval ${params[*]};
+}
+
+build_docker_image ()
+{
+	set_builder ()
+	{
+		[ "$LOCAL_BUILDER_NAME" ] || return 0;
+
+		if docker buildx ls | grep "^$LOCAL_BUILDER_NAME" >/dev/null; then
+			execute docker buildx use $LOCAL_BUILDER_NAME;
+
+			if [ $? -ne 0 ]; then
+				error "Failed to switch to $LOCAL_BUILDER_NAME";
+				return 1;
+			fi;
+		else
+			execute docker buildx create --name $LOCAL_BUILDER_NAME --use;
+
+			if [ $? -ne 0 ]; then
+				error "Failed to create $LOCAL_BUILDER_NAME";
+				return 1;
+			fi;
+		fi;
+
+		return 0;
+	}
+
+#	[ "$DST_IMAGE" ] || DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
+#	[ "$BASE_IMAGE" ] || BASE_IMAGE="raymondstrose/ubuntu";
+#	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="20.04";
+#	[ "$DOCKERFILE" ] || DOCKERFILE="$INSTALL_DIR/Dockerfile";
+
+	local BASE_IMAGE;
+	local BASE_IMAGE_TAG;
+	local DOCKERFILE;
+	local TARGET_IMAGE_PREFIX;
+	local TARGET_IMAGE_NAME;
+	local TARGET_IMAGE_TAG;
+	local DST_IMAGE;
+	local GIT_REPO_TAG;
+	local PROCESS_WITH_SCOUT=false;
+	local OPENSEARCH_VERSION;
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--scout) PROCESS_WITH_SCOUT=true;;
+		--no-scout) PROCESS_WITH_SCOUT=false;;
+		--opensearch-version|--opensearch-version=?*)
+			case "$1" in
+			--opensearch-version)	OPENSEARCH_VERSION="$2"; shift;;
+			--opensearch-version=?*)	OPENSEARCH_VERSION="${1#--opensearch-version=}";;
+			esac;;
+		--git-repo-tag|--git-repo-tag=?*)
+			case "$1" in
+			--git-repo-tag)	GIT_REPO_TAG="$2"; shift;;
+			--git-repo-tag=?*)	GIT_REPO_TAG="${1#--git-repo-tag=}";;
+			esac;;
+		--target-image-name|--target-image-name=?*)
+			case "$1" in
+			--target-image-name)	TARGET_IMAGE_NAME="$2"; shift;;
+			--target-image-name=?*)	TARGET_IMAGE_NAME="${1#--target-image-name=}";;
+			esac;;
+		--target-image-tag|--target-image-tag=?*)
+			case "$1" in
+			--target-image-tag)		TARGET_IMAGE_TAG="$2"; shift;;
+			--target-image-tag=?*)	TARGET_IMAGE_TAG="${1#--target-image-tag=}";;
+			esac;;
+		--target-image-prefix|--target-image-prefix=?*)
+			case "$1" in
+			--target-image-prefix)		TARGET_IMAGE_PREFIX="$2"; shift;;
+			--target-image-prefix=?*)	TARGET_IMAGE_PREFIX="${1#--target-image-prefix=}";;
+			esac;;
+		--dockerfile|--dockerfile=?*)
+			case "$1" in
+			--dockerfile)		DOCKERFILE="$2"; shift;;
+			--dockerfile=?*)	DOCKERFILE="${1#--dockerfile=}";;
+			esac;;
+		--base-image-name|--base-image-name=?*)
+			case "$1" in
+			--base-image-name)		BASE_IMAGE="$2"; shift;;
+			--base-image-name=?*)	BASE_IMAGE="${1#--base-image-name=}";;
+			esac;;
+		--base-image-tag|--base-image-tag=?*)
+			case "$1" in
+			--base-image-tag)	BASE_IMAGE_TAG="$2"; shift;;
+			--base-image-tag=?*)	BASE_IMAGE_TAG="${1#--base-image-tag=}";;
+			esac;;
+		--docker-context|--docker-context=?*)
+			case "$1" in
+			--docker-context)		BUILD_DOCKER_CONTEXT="$2"; shift;;
+			--docker-context=?*)	BUILD_DOCKER_CONTEXT="${1#--docker-context=}";;
+			esac;;
+		--image-name|--image-name=?*)
+			case "$1" in
+			--image-name)		IMAGE_NAME="$2"; shift;;
+			--image-name=?*)	IMAGE_NAME="${1#--image-name=}";;
+			esac;;
+		--image-tag|--image-tag=?*)
+			case "$1" in
+			--image-tag)	IMAGE_TAG="$2"; shift;;
+			--image-tag=?*)	IMAGE_TAG="${1#--image-tag=}";;
+			esac;;
+		--docker-host|--docker-host=?*)
+			case "$1" in
+			--docker-host)		DOCKER_HOST="$2"; shift;;
+			--docker-host=?*)	DOCKER_HOST="${1#--docker-host=}";;
+			esac;;
+		--config-dir|--config-dir=?*)
+			case "$1" in
+			--config-dir)		CONFIG_DIR="$2"; shift;;
+			--config-dir=?*)	CONFIG_DIR="${1#--config-dir=}";;
+			esac;
+
+		# Load the specified configuration files.
+			load_config || return $?;;
+		--debug)	$DEBUG_MODE && set -x; DEBUG_MODE=true;;
+		--noop)		NOOP_MODE=true;;
+		--verbose)	VERBOSE_MODE=true;;
+		--help) usage; return 2;;
+		--) shift; break;;
+		-*)	error "unknown option \"$1\""; usage; return 1;;
+		*)	error "unrecognised command line argument \"$1\""; usage; return 1;;
+		esac;
+
+		shift;
+	done;
+
+	#OPENSEARCH_VERSION="${TARGET_IMAGE_TAG}";
+	DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
+
+# Docker buildx support.
+# When enabled, images for multiple platforms are built.
+	if $BUILDX_ENABLE; then
+		set_builder;
+
+		execute docker buildx build	\
+			--platform $BUILDX_PLATFORMS	\
+			--load	\
+			--build-arg BASE_IMAGE="$BASE_IMAGE" \
+			--build-arg BASE_IMAGE_TAG="$BASE_IMAGE_TAG" \
+			--build-arg TARGET_IMAGE_NAME="$TARGET_IMAGE_NAME" \
+			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
+			--build-arg GIT_REPO_TAG="v$GIT_REPO_TAG" \
+			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
+			-t "$DST_IMAGE"	\
+			-f "$DOCKERFILE"	\
+			$INSTALL_DIR;
+
+		if [ $? -ne 0 ]; then
+			error "Failed to build $DST_IMAGE";
+			return 1;
+		fi;
+	else
+		execute docker build	\
+			--platform $BUILDX_PLATFORMS	\
+			--load	\
+			--build-arg BASE_IMAGE="$BASE_IMAGE" \
+			--build-arg BASE_IMAGE_TAG="$BASE_IMAGE_TAG" \
+			--build-arg TARGET_IMAGE_NAME="$TARGET_IMAGE_NAME" \
+			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
+			--build-arg GIT_REPO_TAG="v$GIT_REPO_TAG" \
+			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
+			-t "$DST_IMAGE"	\
+			-f "$DOCKERFILE"	\
+			"$INSTALL_DIR";
+
+		if [ $? -ne 0 ]; then
+			error "Failed to push $DST_IMAGE";
+			return 1;
+		fi;
+	fi;
+
+	if $PROCESS_WITH_SCOUT; then
+		execute docker scout quickview $DST_IMAGE;
+		execute docker scout cves $DST_IMAGE;
+		execute docker scout recommendations $DST_IMAGE;
+	fi;
+
+	return 0;
+}
+
+publish_docker_image ()
+{
+	execute docker push "$DST_IMAGE";
+}
+
+main ()
+{
+# Display usage information.
+#
+	usage ()
+	{
+		cat <<-EOF >&2
+			$PROGNAME: usage: $PROGNAME [--help] [--debug] [--verbose] [--noop] [--config-dir {path}] [--base-image-name {name}] [--base-image-tag {tag}] [--image-name {name}] [--image-tag {tag}] [--docker-context {name}] [--docker-host {spec}]
+
+			--base-image-name {name}    Specify the Docker base image name (default: $BASE_IMAGE)
+			--base-image-tag {tag}      Specify the Docker base image tag (default: $BASE_IMAGE_TAG)
+			--image-name {name}         Specify the Docker image name (default: $TARGET_IMAGE_NAME)
+			--image-tag {tag}           Specify the Docker image tag (default: $TARGET_IMAGE_TAG)
+			--docker-context {name}     Specify the Docker context for the build (default: $BUILD_DOCKER_CONTEXT)
+			--docker-host {spec}        Specify the Docker host as per https://docs.docker.com/engine/security/protect-access/ (default $DOCKER_HOST)
+			--config-dir {path}         Specify the configuration directory (default: $CONFIG_DIR)
+			--noop                      Don't perform the operation, just report the actions that would be carried out.
+			--verbose                   Enable verbose mode.
+			--debug                     Enable debug mode.
+			--help                      Display this usage information.
+			EOF
+
+		return 0;
+	}
+
+# Load configuration files.
+#
+	load_config ()
+	{
+		if [ "$CONFIG_DIR" ]; then
+			if [ -d "$CONFIG_DIR" ]; then
+
+			# Configure the process
+			#
+				notice "Loading configuration.";
+				for filename in $CONFIG_DIR/*; do
+					indent "$filename" | debug;
+					[ -f "$filename" ] && { source "$filename" || return 1; }
+				done;
+			fi;
+		fi;
+
+		return 0;
+	}
+
+# Create the initial configuration files.
+#
+# Any files already in place should not be overwritten.
+#
+	initialise_configuration ()
+	{
+		default_values ()
+		{
+			cat <<-EOF
+				DEBUG_MODE				false
+				VERBOSE_MODE			false
+				REMOVE_MODE				false
+				NOOP_MODE				false
+				LIST_MODE				false
+
+				BUILDX_ENABLE			true
+				BUILDX_PLATFORMS		"linux/amd64,linux/arm64"
+				BUILD_HOME_DIR			"/home/build"
+				BUILD_UID				"1001"
+
+				BASE_IMAGE          	"ubuntu"
+				BASE_IMAGE_TAG	    	"20.04"
+
+				TARGET_IMAGE_PREFIX		"raymondstrose/"
+				TARGET_IMAGE_NAME		"opensearch"
+				OPENSEARCH_VERSION	"9.2.0"
+				TARGET_IMAGE_TAG		"\$OPENSEARCH_VERSION"
+				DOCKER_SCAN				false
+				TARGET_IMAGE_PUSH		false
+				EOF
+		}
+
+		[ -d $CONFIG_DIR ] || mkdir -p $CONFIG_DIR;
+
+		if [ ! -f $CONFIG_DIR/settings ]; then
+			default_values | awk '{ if($1 != "") printf("export %s=%s;\n", $1, $2); }' >$CONFIG_DIR/settings
+		fi;
+
+		return 0;
+	}
+
+	export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin";
+	export PROGNAME=$(basename "$0");
+	export PROGDIR=$(dirname "$0");
+	export INSTALL_DIR=$(dirname "$PROGDIR");
+	export CONFIG_DIR="$INSTALL_DIR/etc/$PROGNAME";
+	export LIB_DIR="$INSTALL_DIR/lib/$PROGNAME";
+	export WORK_DIR="$INSTALL_DIR/var/$PROGNAME";
+
+# Create the initial configuration files.
+	initialise_configuration || return $?;
+
+# Load the default configuration files.
+	load_config || return $?;
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--target-image-name|--target-image-name=?*)
+			case "$1" in
+			--target-image-name)	TARGET_IMAGE_NAME="$2"; shift;;
+			--target-image-name=?*)	TARGET_IMAGE_NAME="${1#--target-image-name=}";;
+			esac;;
+		--target-image-tag|--target-image-tag=?*)
+			case "$1" in
+			--target-image-tag)		TARGET_IMAGE_TAG="$2"; shift;;
+			--target-image-tag=?*)	TARGET_IMAGE_TAG="${1#--target-image-tag=}";;
+			esac;
+
+			OPENSEARCH_VERSION="$TARGET_IMAGE_TAG";;
+		--target-image-prefix|--target-image-prefix=?*)
+			case "$1" in
+			--target-image-prefix)		TARGET_IMAGE_PREFIX="$2"; shift;;
+			--target-image-prefix=?*)	TARGET_IMAGE_PREFIX="${1#--target-image-prefix=}";;
+			esac;;
+		--base-image-name|--base-image-name=?*)
+			case "$1" in
+			--base-image-name)		BASE_IMAGE="$2"; shift;;
+			--base-image-name=?*)	BASE_IMAGE="${1#--base-image-name=}";;
+			esac;;
+		--base-image-tag|--base-image-tag=?*)
+			case "$1" in
+			--base-image-tag)	BASE_IMAGE_TAG="$2"; shift;;
+			--base-image-tag=?*)	BASE_IMAGE_TAG="${1#--base-image-tag=}";;
+			esac;;
+		--docker-context|--docker-context=?*)
+			case "$1" in
+			--docker-context)		BUILD_DOCKER_CONTEXT="$2"; shift;;
+			--docker-context=?*)	BUILD_DOCKER_CONTEXT="${1#--docker-context=}";;
+			esac;;
+		--image-name|--image-name=?*)
+			case "$1" in
+			--image-name)		IMAGE_NAME="$2"; shift;;
+			--image-name=?*)	IMAGE_NAME="${1#--image-name=}";;
+			esac;;
+		--image-tag|--image-tag=?*)
+			case "$1" in
+			--image-tag)	IMAGE_TAG="$2"; shift;;
+			--image-tag=?*)	IMAGE_TAG="${1#--image-tag=}";;
+			esac;;
+		--docker-host|--docker-host=?*)
+			case "$1" in
+			--docker-host)		DOCKER_HOST="$2"; shift;;
+			--docker-host=?*)	DOCKER_HOST="${1#--docker-host=}";;
+			esac;;
+		--config-dir|--config-dir=?*)
+			case "$1" in
+			--config-dir)		CONFIG_DIR="$2"; shift;;
+			--config-dir=?*)	CONFIG_DIR="${1#--config-dir=}";;
+			esac;
+
+		# Load the specified configuration files.
+			load_config || return $?;;
+		--debug)	$DEBUG_MODE && set -x; DEBUG_MODE=true;;
+		--noop)		NOOP_MODE=true;;
+		--verbose)	VERBOSE_MODE=true;;
+		--help) usage; return 2;;
+		--) shift; break;;
+		-*)	error "unknown option \"$1\""; usage; return 1;;
+		*)	error "unrecognised command line argument \"$1\""; usage; return 1;;
+		esac;
+
+		shift;
+	done;
+
+	debug "$(env)";
+
+	mkdir -p $WORK_DIR;
+
+	[ "$DST_IMAGE" ] || DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
+	[ "$BASE_IMAGE" ] || BASE_IMAGE="raymondstrose/ubuntu";
+	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="20.04";
+	[ "$DOCKERFILE" ] || DOCKERFILE="$INSTALL_DIR/Dockerfile";
+	GIT_REPO_TAG="$TARGET_IMAGE_TAG";
+
+# Build the container image to build the software
+	execute build_docker_image	\
+		--no-scout	\
+		--dockerfile="Dockerfile.builder"	\
+		--git-repo-tag="$GIT_REPO_TAG"	\
+		--opensearch-version="$OPENSEARCH_VERSION"	\
+		--target-image-name="$TARGET_IMAGE_NAME"	\
+		--target-image-tag="$TARGET_IMAGE_TAG-builder"	\
+		--base-image-name="$BASE_IMAGE"	\
+		--base-image-tag="$BASE_IMAGE_TAG";
+
+	if [ $? -ne 0 ]; then
+		error "Failed to build Docker image builder";
+		return 1;
+	fi;
+
+# Build the container image to host the previously built software
+	execute build_docker_image	\
+		--scout	\
+		--dockerfile="Dockerfile"	\
+		--git-repo-tag="$GIT_REPO_TAG"	\
+		--opensearch-version="$OPENSEARCH_VERSION"	\
+		--target-image-prefix="$TARGET_IMAGE_PREFIX"	\
+		--target-image-name="$TARGET_IMAGE_NAME"	\
+		--target-image-tag="$TARGET_IMAGE_TAG"	\
+		--base-image-name="$BASE_IMAGE"	\
+		--base-image-tag="$BASE_IMAGE_TAG";
+
+	if [ $? -ne 0 ]; then
+		error "Failed to build Docker image";
+		return 1;
+	fi;
+
+	execute publish_docker_image;
+
+	if [ $? -ne 0 ]; then
+		error "Failed to publish Docker image";
+		return 1;
+	fi;
+
+	return 0;
+}
+
+	main "$@";

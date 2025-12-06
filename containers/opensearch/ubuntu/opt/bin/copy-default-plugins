@@ -1,0 +1,23 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch/opt/bin/copy-default-plugins
+#
+# raymondstrose@hotmail.com
+#
+
+function is_dir_empty ()
+{
+	[ -z "$(ls -A $1 2>/dev/null)" ];
+}
+
+if [ -f /opt/lib/fs ]; then
+	. /opt/lib/fs;
+fi;
+
+if [ -f /opt/lib/environment ]; then
+	. /opt/lib/environment;
+fi;
+
+if ! is_dir_empty "$DB_DEFAULT_PLUGINS_DIR"; then
+	cp -nr "$DB_DEFAULT_PLUGINS_DIR"/* /plugins;
+fi;

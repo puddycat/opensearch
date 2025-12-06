@@ -1,0 +1,38 @@
+#! /usr/bin/env bash
+#
+# /opt/bin/setup
+#
+# raymondstrose@hotmail.com
+#
+
+# shellcheck disable=SC1091
+
+set -o errexit
+set -o nounset
+set -o pipefail
+#set -o xtrace
+
+# Load libraries
+. /opt/lib/os;
+. /opt/lib/fs;
+. /opt/lib/opensearch;
+
+# Load environment
+. /opt/lib/environment;
+
+# Ensure Opensearch environment variables settings are valid
+opensearch_validate;
+# Ensure Opensearch is stopped when this script ends
+trap "opensearch_stop" EXIT;
+# Ensure 'daemon' user exists when running as 'root'
+am_i_root && ensure_user_exists "$DB_DAEMON_USER" --group "$DB_DAEMON_GROUP";
+# Ensure Opensearch is initialized
+opensearch_initialize;
+# Ensure kernel settings are valid
+opensearch_validate_kernel;
+# Install Opensearch plugins
+opensearch_install_plugins;
+# Ensure custom initialization scripts are executed
+opensearch_custom_init_scripts;
+# Ensure all the required keys are added after plugins are installed
+opensearch_set_keys;
