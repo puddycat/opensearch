@@ -173,7 +173,7 @@ build_docker_image ()
 			--build-arg BASE_IMAGE_TAG="$BASE_IMAGE_TAG" \
 			--build-arg TARGET_IMAGE_NAME="$TARGET_IMAGE_NAME" \
 			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
-			--build-arg GIT_REPO_TAG="v$GIT_REPO_TAG" \
+			--build-arg GIT_REPO_TAG="$GIT_REPO_TAG" \
 			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
 			-t "$DST_IMAGE"	\
 			-f "$DOCKERFILE"	\
@@ -191,7 +191,7 @@ build_docker_image ()
 			--build-arg BASE_IMAGE_TAG="$BASE_IMAGE_TAG" \
 			--build-arg TARGET_IMAGE_NAME="$TARGET_IMAGE_NAME" \
 			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
-			--build-arg GIT_REPO_TAG="v$GIT_REPO_TAG" \
+			--build-arg GIT_REPO_TAG="$GIT_REPO_TAG" \
 			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
 			-t "$DST_IMAGE"	\
 			-f "$DOCKERFILE"	\

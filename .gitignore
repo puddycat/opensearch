@@ -1,0 +1,5 @@
+opendistro-build/
+etc/*
+*/etc/*
+*/*/etc/*
+*/*/*/etc/*
