@@ -2794,7 +2794,7 @@ volumePermissions:
   image:
     registry: docker.io
     repository: raymondstrose/ubuntu
-    tag: 20.04
+    tag: 24.04
     digest: ""
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
@@ -2841,7 +2841,7 @@ sysctlImage:
   ##
   registry: docker.io
   repository: raymondstrose/ubuntu
-  tag: 20.04
+  tag: 24.04
   digest: ""
   ## Specify a imagePullPolicy
   ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
@@ -3557,7 +3557,7 @@ snapshots:
   image:
     registry: docker.io
     repository: raymondstrose/ubuntu
-    tag: 20.04
+    tag: 24.04
     digest: ""
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
