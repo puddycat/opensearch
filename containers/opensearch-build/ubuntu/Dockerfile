@@ -7,7 +7,7 @@
 #
 #   docker build -f Dockerfile  \
 #       --build-arg BASE_IMAGE="ubuntu" \
-#       --build-arg BASE_IMAGE_TAG="20.04" \
+#       --build-arg BASE_IMAGE_TAG="24.04" \
 #       --build-arg TARGET_IMAGE_NAME="raymondstrose/opensearch" \
 #       --build-arg TARGET_IMAGE_TAG="3.0.0" \
 #       --build-arg OPENSEARCH_VERSION="3.0.0" \
@@ -15,7 +15,7 @@
 #
 
 ARG	BASE_IMAGE="ubuntu"
-ARG	BASE_IMAGE_TAG="20.04"
+ARG	BASE_IMAGE_TAG="24.04"
 ARG	OPENSEARCH_VERSION="3.0.0"
 ARG TARGET_IMAGE_NAME
 ARG TARGET_IMAGE_TAG
@@ -68,7 +68,8 @@ RUN wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_${YQ
 
 RUN apt-get update && apt-get clean all -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 COPY opt /opt
-COPY --from=build-platform /opensearch/build/distribution/local/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/ /opt/opensearch
+#COPY --from=build-platform /opensearch/build/distribution/local/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/ /opt/opensearch
+COPY --from=build-platform /home/opensearch/opensearch-build/dist/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/ /opt/opensearch
 RUN chown -Rh ${UID}:${GID} /opt/opensearch;
 
 EXPOSE 9200 9300

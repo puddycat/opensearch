@@ -60,7 +60,7 @@ build_docker_image ()
 
 #	[ "$DST_IMAGE" ] || DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
 #	[ "$BASE_IMAGE" ] || BASE_IMAGE="raymondstrose/ubuntu";
-#	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="20.04";
+#	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="24.04";
 #	[ "$DOCKERFILE" ] || DOCKERFILE="$INSTALL_DIR/Dockerfile";
 
 	local BASE_IMAGE;
@@ -224,8 +224,9 @@ main ()
 	usage ()
 	{
 		cat <<-EOF >&2
-			$PROGNAME: usage: $PROGNAME [--help] [--debug] [--verbose] [--noop] [--config-dir {path}] [--base-image-name {name}] [--base-image-tag {tag}] [--image-name {name}] [--image-tag {tag}] [--docker-context {name}] [--docker-host {spec}]
+			$PROGNAME: usage: $PROGNAME [--help] [--debug] [--verbose] [--noop] [--config-dir {path}] [--base-image-name {name}] [--base-image-tag {tag}] [--image-name {name}] [--image-tag {tag}] [--docker-context {name}] [--docker-host {spec}] [--opensearch-version {identifier}]
 
+			--opensearch-version {identifier}     Specify the Opensearch version to build (default: $OPENSEARCH_VERSION)
 			--base-image-name {name}    Specify the Docker base image name (default: $BASE_IMAGE)
 			--base-image-tag {tag}      Specify the Docker base image tag (default: $BASE_IMAGE_TAG)
 			--image-name {name}         Specify the Docker image name (default: $TARGET_IMAGE_NAME)
@@ -283,7 +284,7 @@ main ()
 				BUILD_UID				"1001"
 
 				BASE_IMAGE          	"ubuntu"
-				BASE_IMAGE_TAG	    	"20.04"
+				BASE_IMAGE_TAG	    	"24.04"
 
 				TARGET_IMAGE_PREFIX		"raymondstrose/"
 				TARGET_IMAGE_NAME		"opensearch"
@@ -319,6 +320,13 @@ main ()
 
 	while [ $# -gt 0 ]; do
 		case "$1" in
+		--opensearch-version|--opensearch-version=?*)
+			case "$1" in
+			--opensearch-version)	OPENSEARCH_VERSION="$2"; shift;;
+			--opensearch-version=?*)	OPENSEARCH_VERSION="${1#--opensearch-version=}";;
+			esac;
+
+			TARGET_IMAGE_TAG = "$OPENSEARCH_VERSION";;
 		--target-image-name|--target-image-name=?*)
 			case "$1" in
 			--target-image-name)	TARGET_IMAGE_NAME="$2"; shift;;
@@ -392,7 +400,7 @@ main ()
 
 	[ "$DST_IMAGE" ] || DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
 	[ "$BASE_IMAGE" ] || BASE_IMAGE="raymondstrose/ubuntu";
-	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="20.04";
+	[ "$BASE_IMAGE_TAG" ] || BASE_IMAGE_TAG="24.04";
 	[ "$DOCKERFILE" ] || DOCKERFILE="$INSTALL_DIR/Dockerfile";
 	GIT_REPO_TAG="$TARGET_IMAGE_TAG";
 
