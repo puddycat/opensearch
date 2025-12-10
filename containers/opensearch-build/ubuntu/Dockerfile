@@ -69,7 +69,11 @@ RUN wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_${YQ
 RUN apt-get update && apt-get clean all -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 COPY opt /opt
 #COPY --from=build-platform /opensearch/build/distribution/local/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/ /opt/opensearch
-COPY --from=build-platform /home/opensearch/opensearch-build/dist/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/ /opt/opensearch
+COPY --from=build-platform /home/opensearch/opensearch-build/tar/builds/opensearch/dist/opensearch-min-${OPENSEARCH_VERSION}-linux-arm64.tar.gz /opt/
+RUN cd /opt &&	\
+	tar xBzf opensearch-min-${OPENSEARCH_VERSION}-linux-arm64.tar.gz &&	\
+	ln -s opensearch opensearch-${OPENSEARCH_VERSION} &&	\
+	rm opensearch-min-${OPENSEARCH_VERSION}-linux-arm64.tar.gz
 RUN chown -Rh ${UID}:${GID} /opt/opensearch;
 
 EXPOSE 9200 9300
