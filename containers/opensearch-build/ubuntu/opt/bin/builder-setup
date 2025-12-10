@@ -1,0 +1,119 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch-build/ubuntu/opt/bin/builder-setup
+#
+# raymondstrose@hotmail.com
+#
+#   Run as the opensearch user, this script performs system setup for Opensearch builder container image.
+#
+
+main ()
+{
+	export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin";
+	export PROGNAME=$(basename "$0");
+	export PROGDIR=$(dirname "$0");
+	export INSTALL_DIR=$(dirname "$PROGDIR");
+	export CONFIG_DIR="$INSTALL_DIR/etc/$PROGNAME";
+	export LIB_DIR="$INSTALL_DIR/lib/$PROGNAME";
+	export WORK_DIR="$INSTALL_DIR/var/$PROGNAME";
+	export USERNAME="opensearch";
+	export GROUPNAME="opensearch";
+	export UID=1001;
+	export GID=1001;
+	export HOME_DIR="/home/opensearch";
+	export GIT_REPO_TAG="3.0.0";
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--opensearch-version|--opensearch-version=?*)
+			case "$1" in
+			--opensearch-version)	OPENSEARCH_VERSION="$2"; shift;;
+			--opensearch-version=?*)	OPENSEARCH_VERSION="${1#--opensearch-version=}";;
+			esac;
+
+			GIT_REPO_TAG="$OPENSEARCH_VERSION";
+			TARGET_IMAGE_TAG = "$OPENSEARCH_VERSION";;
+		--username|--username=?*)
+			case "$1" in
+			--username)	USERNAME="$2"; shift;;
+			--username=?*)	USERNAME="${1#--username=}";;
+			esac;;
+		--groupname|--groupname=?*)
+			case "$1" in
+			--groupname)	GROUPNAME="$2"; shift;;
+			--groupname=?*)	GROUPNAME="${1#--groupname=}";;
+			esac;;
+		--uid|--uid=?*)
+			case "$1" in
+			--uid)	UID="$2"; shift;;
+			--uid=?*)	UID="${1#--uid=}";;
+			esac;;
+		--gid|--gid=?*)
+			case "$1" in
+			--gid)	GID="$2"; shift;;
+			--gid=?*)	GID="${1#--gid=}";;
+			esac;;
+		--home-directory|--home-directory=?*)
+			case "$1" in
+			--home-directory)	HOME_DIR="$2"; shift;;
+			--home-directory=?*)	HOME_DIR="${1#--home-directory=}";;
+			esac;;
+		--debug)	$DEBUG_MODE && set -x; DEBUG_MODE=true;;
+		--noop)		NOOP_MODE=true;;
+		--verbose)	VERBOSE_MODE=true;;
+		--help) usage; return 2;;
+		--) shift; break;;
+		-*)	error "unknown option \"$1\""; usage; return 1;;
+		*)	error "unrecognised command line argument \"$1\""; usage; return 1;;
+		esac;
+
+		shift;
+	done;
+
+	debug "$(env)";
+
+	# pyenv installation says to add the following to .bashrc:
+	#   33 5.978 export PYENV_ROOT="$HOME/.pyenv"
+	#   33 5.978 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+	#   33 5.978 eval "$(pyenv init - bash)"
+	#
+	#   33 6.201 # Load pyenv-virtualenv automatically by adding
+	#   33 6.201 # the following to ~/.bashrc:
+	#   33 6.201
+	#   33 6.201 eval "$(pyenv virtualenv-init -)"
+
+	curl https://pyenv.run | bash
+	echo 'export PYENV_ROOT="$HOME/.pyenv"' >>~/.bashrc
+	echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >>~/.bashrc
+	echo 'export PATH="${HOME_DIR}/.pyenv/libexec:$PATH"' >>~/.bashrc
+	echo 'eval "$(pyenv init --path)"' >>~/.bashrc
+	echo 'eval "$(pyenv init -)"' >>~/.bashrc
+
+	#USER ${UID}
+	#ENV HOME=${HOME_DIR}
+	#WORKDIR ${HOME_DIR}
+
+	${HOME_DIR}/.pyenv/libexec/pyenv install 3.9
+	${HOME_DIR}/.pyenv/libexec/pyenv global 3.9
+	git clone https://github.com/opensearch-project/opensearch-build.git --branch=${GIT_REPO_TAG};
+
+	# 25.99 run_build.py: error: argument manifest: can't open 'manifests/3.3.0/opensearch-3.3.0.yml': [Errno 2] No such file or directory: 'manifests/3.3.0/opensearch-3.3.0.yml'
+	cd opensearch-build;	\
+		./build.sh manifests/${OPENSEARCH_VERSION}/opensearch-${OPENSEARCH_VERSION}.yml --component OpenSearch common-utils;	\
+		./build.sh manifests/${OPENSEARCH_VERSION}/opensearch-dashboards-${OPENSEARCH_VERSION}.yml --component OpenSearch-Dashboards observabilityDashboards;
+
+	if [ -f builds/opensearch/manifest.yml ]; then
+		./assemble.sh builds/opensearch/manifest.yml;
+	fi;
+
+	#cd opensearch-build;	\
+	#	./build.sh manifests/${OPENSEARCH_VERSION}/opensearch-${OPENSEARCH_VERSION}.yml; 	\
+	#	./assemble.sh builds/opensearch/manifest.yml
+	##cd opensearch-build;	\
+	##	CONFIG_DEFAULT_DIR="/opensearch-build/build/distribution/local/opensearch-${OPENSEARCH_VERSION}-SNAPSHOT/config.default";	\
+	##	[ -d $CONFIG_DEFAULT_DIR ] || mkdir $CONFIG_DEFAULT_DIR;
+
+	return 0;
+}
+
+	main "$@";

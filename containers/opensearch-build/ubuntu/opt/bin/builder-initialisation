@@ -1,0 +1,93 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch-build/ubuntu/opt/bin/builder-initialisation
+#
+# raymondstrose@hotmail.com
+#
+#   Run as root, this script performs system initialisation for Opensearch builder container image.
+#
+
+main ()
+{
+	export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin";
+	export PROGNAME=$(basename "$0");
+	export PROGDIR=$(dirname "$0");
+	export INSTALL_DIR=$(dirname "$PROGDIR");
+	export CONFIG_DIR="$INSTALL_DIR/etc/$PROGNAME";
+	export LIB_DIR="$INSTALL_DIR/lib/$PROGNAME";
+	export WORK_DIR="$INSTALL_DIR/var/$PROGNAME";
+	export USERNAME="opensearch";
+	export GROUPNAME="opensearch";
+	export UID=1001;
+	export GID=1001;
+	export HOME_DIR="/home/opensearch";
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--opensearch-version|--opensearch-version=?*)
+			case "$1" in
+			--opensearch-version)	OPENSEARCH_VERSION="$2"; shift;;
+			--opensearch-version=?*)	OPENSEARCH_VERSION="${1#--opensearch-version=}";;
+			esac;
+
+			TARGET_IMAGE_TAG = "$OPENSEARCH_VERSION";;
+		--username|--username=?*)
+			case "$1" in
+			--username)	USERNAME="$2"; shift;;
+			--username=?*)	USERNAME="${1#--username=}";;
+			esac;;
+		--groupname|--groupname=?*)
+			case "$1" in
+			--groupname)	GROUPNAME="$2"; shift;;
+			--groupname=?*)	GROUPNAME="${1#--groupname=}";;
+			esac;;
+		--uid|--uid=?*)
+			case "$1" in
+			--uid)	UID="$2"; shift;;
+			--uid=?*)	UID="${1#--uid=}";;
+			esac;;
+		--gid|--gid=?*)
+			case "$1" in
+			--gid)	GID="$2"; shift;;
+			--gid=?*)	GID="${1#--gid=}";;
+			esac;;
+		--home-directory|--home-directory=?*)
+			case "$1" in
+			--home-directory)	HOME_DIR="$2"; shift;;
+			--home-directory=?*)	HOME_DIR="${1#--home-directory=}";;
+			esac;;
+		--debug)	$DEBUG_MODE && set -x; DEBUG_MODE=true;;
+		--noop)		NOOP_MODE=true;;
+		--verbose)	VERBOSE_MODE=true;;
+		--help) usage; return 2;;
+		--) shift; break;;
+		-*)	error "unknown option \"$1\""; usage; return 1;;
+		*)	error "unrecognised command line argument \"$1\""; usage; return 1;;
+		esac;
+
+		shift;
+	done;
+
+	debug "$(env)";
+
+	apt-get update && apt-get install -y software-properties-common build-essential curl git && apt-get update;
+	apt-get install -y gradle default-jdk;
+	apt-get install -y python3-minimal python3-pip pipenv;
+
+	# See: https://github.com/pyenv/pyenv/wiki
+	apt-get install -y libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev;
+
+	# Install apt-file to facilitate package searches: apt-file search --regex 'bin/netstat$'
+	apt-get install -y apt-file && apt-file update;
+
+	groupadd --gid ${GID} ${GROUPNAME};
+	useradd	\
+			--uid ${UID} --gid ${GID}	\
+			--create-home --home-dir ${HOME_DIR}	\
+			--shell /bin/bash	\
+			${USERNAME};
+
+	return 0;
+}
+
+	main "$@";
