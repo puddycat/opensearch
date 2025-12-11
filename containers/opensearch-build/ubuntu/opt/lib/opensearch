@@ -1,0 +1,34 @@
+#! /usr/bin/env bash
+#
+# opensearch/containers/opensearch-build/ubuntu/opt/lib/opensearch
+#
+# raymondstrose@hotmail.com
+#
+#   Library of Opensearch functions.
+#
+
+opensearch_arch ()
+{
+	case $(uname -m) in
+	x86_64)	echo "amd64";;
+	arm64)	echo "arm64";;
+	*)	echo "unsupported"; return 1;;
+	esac;
+	return 0;
+}
+
+opensearch_repo_setup ()
+{
+	case $(uname -m) in
+	x86_64)
+		cat <<-EOF
+			deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+			EOF
+		;;
+	arm64)
+		cat <<-EOF
+			deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+			EOF
+		;;
+	esac;
+}
