@@ -7,15 +7,18 @@
 #   Run as the opensearch user, this script performs system setup for Opensearch builder container image.
 #
 
+build_environment ()
+{
+	echo "TARGETPLATFORM=${TARGETPLATFORM}";
+	echo "TARGETOS=${TARGETOS}";
+	echo "TARGETARCH=${TARGETARCH}";
+	echo "TARGETVARIANT=${TARGETVARIANT}";
+	env;
+	echo "Opensearch Arch: $(opensearch_arch)";
+}
+
 main ()
 {
-	export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin";
-	export PROGNAME=$(basename "$0");
-	export PROGDIR=$(dirname "$0");
-	export INSTALL_DIR=$(dirname "$PROGDIR");
-	export CONFIG_DIR="$INSTALL_DIR/etc/$PROGNAME";
-	export LIB_DIR="$INSTALL_DIR/lib/$PROGNAME";
-	export WORK_DIR="$INSTALL_DIR/var/$PROGNAME";
 	export USERNAME="opensearch";
 	export GROUPNAME="opensearch";
 	export UID=1001;
@@ -70,7 +73,10 @@ main ()
 		shift;
 	done;
 
-	debug "$(env)";
+	{
+		build_environment;
+		debug "$(env)";
+	} | tee $HOME/${PROGNAME}_build_environment;
 
 	# pyenv installation says to add the following to .bashrc:
 	#   33 5.978 export PYENV_ROOT="$HOME/.pyenv"
@@ -115,5 +121,17 @@ main ()
 
 	return 0;
 }
+
+	export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+	export PROGNAME=$(basename "$0");
+	export PROGDIR=$(dirname "$0");
+	export INSTALL_DIR=$(dirname "$PROGDIR");
+	export CONFIG_DIR="$INSTALL_DIR/etc/$PROGNAME";
+	export BIN_DIR="$INSTALL_DIR/bin";
+	export LIB_DIR="$INSTALL_DIR/lib";
+	export WORK_DIR="$INSTALL_DIR/var/$PROGNAME";
+
+	. $LIB_DIR/log;
+	. $LIB_DIR/opensearch;
 
 	main "$@";
