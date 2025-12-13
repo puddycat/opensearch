@@ -35,7 +35,7 @@ main ()
 			esac;
 
 			GIT_REPO_TAG="$OPENSEARCH_VERSION";
-			TARGET_IMAGE_TAG = "$OPENSEARCH_VERSION";;
+			TARGET_IMAGE_TAG="$OPENSEARCH_VERSION";;
 		--username|--username=?*)
 			case "$1" in
 			--username)	USERNAME="$2"; shift;;
