@@ -326,7 +326,7 @@ main ()
 			--opensearch-version=?*)	OPENSEARCH_VERSION="${1#--opensearch-version=}";;
 			esac;
 
-			TARGET_IMAGE_TAG = "$OPENSEARCH_VERSION";;
+			TARGET_IMAGE_TAG="$OPENSEARCH_VERSION";;
 		--target-image-name|--target-image-name=?*)
 			case "$1" in
 			--target-image-name)	TARGET_IMAGE_NAME="$2"; shift;;
