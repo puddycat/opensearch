@@ -35,6 +35,11 @@ function execute ()
 
 build_docker_image ()
 {
+	buildx_version ()
+	{
+		docker buildx version | awk '{ print $2; }';
+	}
+
 	set_builder ()
 	{
 		[ "$LOCAL_BUILDER_NAME" ] || return 0;
@@ -73,6 +78,9 @@ build_docker_image ()
 	local GIT_REPO_TAG;
 	local PROCESS_WITH_SCOUT=false;
 	local OPENSEARCH_VERSION;
+
+# FIXME: On imac-1 the --load option results in ERROR: docker exporter does not currently suppoer exporting manifest list.
+	local BUILD_OUTPUT="--load";
 
 	while [ $# -gt 0 ]; do
 		case "$1" in
@@ -158,6 +166,7 @@ build_docker_image ()
 		shift;
 	done;
 
+	local BUILD_OUTPUT="--load";
 	#OPENSEARCH_VERSION="${TARGET_IMAGE_TAG}";
 	DST_IMAGE="$TARGET_IMAGE_PREFIX$TARGET_IMAGE_NAME:$TARGET_IMAGE_TAG";
 
@@ -168,16 +177,16 @@ build_docker_image ()
 
 		execute docker buildx build	\
 			--platform $BUILDX_PLATFORMS	\
-			--load	\
+			$BUILD_OUTPUT	\
 			--build-arg BASE_IMAGE="$BASE_IMAGE" \
 			--build-arg BASE_IMAGE_TAG="$BASE_IMAGE_TAG" \
 			--build-arg TARGET_IMAGE_NAME="$TARGET_IMAGE_NAME" \
 			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
 			--build-arg GIT_REPO_TAG="$GIT_REPO_TAG" \
 			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
-			-t "$DST_IMAGE"	\
-			-f "$DOCKERFILE"	\
-			$INSTALL_DIR;
+			--tag "$DST_IMAGE"	\
+			--file "$DOCKERFILE"	\
+			"$INSTALL_DIR";
 
 		if [ $? -ne 0 ]; then
 			error "Failed to build $DST_IMAGE";
@@ -193,12 +202,12 @@ build_docker_image ()
 			--build-arg TARGET_IMAGE_TAG="$TARGET_IMAGE_TAG" \
 			--build-arg GIT_REPO_TAG="$GIT_REPO_TAG" \
 			--build-arg OPENSEARCH_VERSION="$OPENSEARCH_VERSION"	\
-			-t "$DST_IMAGE"	\
-			-f "$DOCKERFILE"	\
+			--tag "$DST_IMAGE"	\
+			--file "$DOCKERFILE"	\
 			"$INSTALL_DIR";
 
 		if [ $? -ne 0 ]; then
-			error "Failed to push $DST_IMAGE";
+			error "Failed to build and push $DST_IMAGE";
 			return 1;
 		fi;
 	fi;
