@@ -27,5 +27,5 @@ maintainers:
 - name: Raymond St.Rose
 name: opensearch
 #sources:
-#- https://github.com/bitnami/charts/tree/main/bitnami/opensearch
+#- https://github.com/bitnami/charts/tree/main/opensearch
 version: 1.0.0

@@ -91,7 +91,7 @@ spec:
             {{- if .Values.security.enabled }}
             {{- if .Values.usePasswordFiles }}
             - name: OPENSEARCH_DASHBOARDS_PASSWORD_FILE
-              value: "/opt/bitnami/opensearch-dashboards/secrets/opensearch-dashboards-password"
+              value: "/opt/opensearch-dashboards/secrets/opensearch-dashboards-password"
             {{- else }}
             - name: OPENSEARCH_DASHBOARDS_PASSWORD
               valueFrom:
@@ -161,31 +161,31 @@ spec:
               mountPath: /tmp
               subPath: tmp-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch-dashboards/config
+              mountPath: /opt/opensearch-dashboards/config
               subPath: app-conf-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch-dashboards/tmp
+              mountPath: /opt/opensearch-dashboards/tmp
               subPath: app-tmp-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch-dashboards/logs
+              mountPath: /opt/opensearch-dashboards/logs
               subPath: app-logs-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch-dashboards/plugins
+              mountPath: /opt/opensearch-dashboards/plugins
               subPath: app-plugins-dir
             - name: dashboards-data
-              mountPath: /bitnami/opensearch-dashboards
+              mountPath: /opensearch-dashboards
             {{- if and .Values.usePasswordFiles .Values.security.enabled }}
             - name: opensearch-dashboards-secrets
-              mountPath: /opt/bitnami/opensearch-dashboards/secrets
+              mountPath: /opt/opensearch-dashboards/secrets
             {{- end }}
             {{- if .Values.security.enabled }}
             - name: opensearch-certificates
-              mountPath: /opt/bitnami/opensearch-dashboards/config/certs/opensearch
+              mountPath: /opt/opensearch-dashboards/config/certs/opensearch
               readOnly: true
             {{- end }}
             {{- if .Values.dashboards.tls.enabled }}
             - name: opensearch-dashboard-certificates
-              mountPath: /opt/bitnami/opensearch-dashboards/config/certs/server
+              mountPath: /opt/opensearch-dashboards/config/certs/server
               readOnly: true
             {{- end }}
             {{- if .Values.dashboards.extraVolumeMounts }}

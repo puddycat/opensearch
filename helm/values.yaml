@@ -91,11 +91,11 @@ containerPorts:
   restAPI: 9200
   transport: 9300
 ## @param plugins Comma, semi-colon or space separated list of plugins to install at initialization
-## ref: https://github.com/bitnami/containers/tree/main/bitnami/opensearch#environment-variables
+## ref: https://github.com/bitnami/containers/tree/main/opensearch#environment-variables
 ##
 plugins: ""
 ## @param snapshotRepoPath File System snapshot repository path
-## ref: https://github.com/bitnami/containers/tree/main/bitnami/opensearch#environment-variables
+## ref: https://github.com/bitnami/containers/tree/main/opensearch#environment-variables
 ##
 snapshotRepoPath: ""
 ## @param config Override opensearch configuration
@@ -221,7 +221,7 @@ security:
   ##
   enabled: false
   ## @param security.adminPassword Password for 'admin' user
-  ## Ref: https://github.com/bitnami/containers/tree/main/bitnami/opensearch#security
+  ## Ref: https://github.com/bitnami/containers/tree/main/opensearch#security
   ##
   adminPassword: ""
   ## @param security.logstashPassword Password for Logstash
@@ -349,7 +349,7 @@ security:
     nodesDN: ""
     ## @param security.tls.adminDN A comma separated list of DN for admins
     ## Note that this parameter has lower priority than extraConfig.plugins.security.authcz.admin_dn and will be overridden if both parameters are set.
-    ## See https://github.com/bitnami/charts/issues/35666 for details. (valid for images newer than bitnami/opensearch:3.1.0-debian-12-r2)
+    ## See https://github.com/bitnami/charts/issues/35666 for details. (valid for images newer than opensearch:3.1.0-debian-12-r2)
     ##
     ## Also, due to specifics of the config bootstrap script implementation, spaces will be treated as separators.  
     ## For example, "CN=admin,O=Some Organisation,L=SomeCity,C=SomeCountry" will become:
@@ -3470,7 +3470,7 @@ dashboards:
     enabled: false
     ## @param dashboards.persistence.mountPath Path to mount the volume at.
     ##
-    mountPath: /bitnami/opensearch-dashboards
+    mountPath: /opensearch-dashboards
     ## @param dashboards.persistence.subPath The subdirectory of the volume to mount to, useful in dev environments and one PV for multiple services
     ##
     subPath: ""

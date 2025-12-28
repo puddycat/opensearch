@@ -87,9 +87,9 @@ Return the copy plugins init container definition
   args:
     - -ec
     - |
-        . /opt/bitnami/scripts/liblog.sh
-        . /opt/bitnami/scripts/libfs.sh
-        . /opt/bitnami/scripts/opensearch-env.sh
+        . /opt/lib/log
+        . /opt/lib/fs
+        . /opt/lib/opensearch-env.sh
 
         mkdir -p /emptydir/app-conf-dir /emptydir/app-plugins-dir
         info "Copying directories to empty dir"
@@ -131,8 +131,8 @@ Return the copy plugins init container definition
     - |
         #!/bin/bash
 
-        . /opt/bitnami/scripts/libfs.sh
-        . /opt/bitnami/scripts/opensearch-dashboards-env.sh
+        . /opt/libfs.sh
+        . /opt/opensearch-dashboards-env.sh
 
         if ! is_dir_empty "$SERVER_DEFAULT_PLUGINS_DIR"; then
             cp -nr "$SERVER_DEFAULT_PLUGINS_DIR"/* /plugins
@@ -579,11 +579,11 @@ Add environment variables to configure database values
   value: "true"
 {{- if .Values.usePasswordFiles }}
 - name: OPENSEARCH_PASSWORD_FILE
-  value: "/opt/bitnami/opensearch/secrets/opensearch-password"
+  value: "/opt/opensearch/secrets/opensearch-password"
 - name: OPENSEARCH_DASHBOARDS_PASSWORD_FILE
-  value: "/opt/bitnami/opensearch/secrets/opensearch-dashboards-password"
+  value: "/opt/opensearch/secrets/opensearch-dashboards-password"
 - name: LOGSTASH_PASSWORD_FILE
-  value: "/opt/bitnami/opensearch/secrets/logstash-password"
+  value: "/opt/opensearch/secrets/logstash-password"
 {{- else }}
 - name: OPENSEARCH_PASSWORD
   valueFrom:
@@ -612,14 +612,14 @@ Add environment variables to configure database values
   value: "true"
 {{- else }}
 - name: OPENSEARCH_KEYSTORE_LOCATION
-  value: "/opt/bitnami/opensearch/config/certs/{{ .Values.security.tls.keystoreFilename }}"
+  value: "/opt/opensearch/config/certs/{{ .Values.security.tls.keystoreFilename }}"
 - name: OPENSEARCH_TRUSTSTORE_LOCATION
-  value: "/opt/bitnami/opensearch/config/certs/{{ .Values.security.tls.truststoreFilename }}"
+  value: "/opt/opensearch/config/certs/{{ .Values.security.tls.truststoreFilename }}"
 {{- end }}
 {{- if and (not .Values.security.tls.usePemCerts) (or .Values.security.tls.keystorePassword .Values.security.tls.passwordsSecret) }}
 {{- if .Values.usePasswordFiles }}
 - name: OPENSEARCH_KEYSTORE_PASSWORD_FILE
-  value: {{ printf "/opt/bitnami/opensearch/secrets/%s" (include "opensearch.keystorePasswordKey" .) }}
+  value: {{ printf "/opt/opensearch/secrets/%s" (include "opensearch.keystorePasswordKey" .) }}
 {{- else }}
 - name: OPENSEARCH_KEYSTORE_PASSWORD
   valueFrom:
@@ -631,7 +631,7 @@ Add environment variables to configure database values
 {{- if and (not .Values.security.tls.usePemCerts) (or .Values.security.tls.truststorePassword .Values.security.tls.passwordsSecret) }}
 {{- if .Values.usePasswordFiles }}
 - name: OPENSEARCH_KEYSTORE_PASSWORD_FILE
-  value: {{ printf "/opt/bitnami/opensearch/secrets/%s" (include "opensearch.truststorePasswordKey" .) }}
+  value: {{ printf "/opt/opensearch/secrets/%s" (include "opensearch.truststorePasswordKey" .) }}
 {{- else }}
 - name: OPENSEARCH_TRUSTSTORE_PASSWORD
   valueFrom:
@@ -643,7 +643,7 @@ Add environment variables to configure database values
 {{- if and .Values.security.tls.usePemCerts (or .Values.security.tls.keyPassword .Values.security.tls.passwordsSecret) }}
 {{- if .Values.usePasswordFiles }}
 - name: OPENSEARCH_KEY_PASSWORD_FILE
-  value: {{ printf "/opt/bitnami/opensearch/secrets/%s" (include "opensearch.keyPasswordKey" .) }}
+  value: {{ printf "/opt/opensearch/secrets/%s" (include "opensearch.keyPasswordKey" .) }}
 {{- else }}
 - name: OPENSEARCH_KEY_PASSWORD
   valueFrom:

@@ -90,9 +90,9 @@ spec:
             - /bin/bash
             - -ec
             - |
-              mkdir -p /bitnami/opensearch/data
-              chown {{ .Values.data.containerSecurityContext.runAsUser }}:{{ .Values.data.podSecurityContext.fsGroup }} /bitnami/opensearch/data
-              find /bitnami/opensearch/data -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | xargs -r chown -R {{ .Values.data.containerSecurityContext.runAsUser }}:{{ .Values.data.podSecurityContext.fsGroup }}
+              mkdir -p /opensearch/data
+              chown {{ .Values.data.containerSecurityContext.runAsUser }}:{{ .Values.data.podSecurityContext.fsGroup }} /opensearch/data
+              find /opensearch/data -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | xargs -r chown -R {{ .Values.data.containerSecurityContext.runAsUser }}:{{ .Values.data.podSecurityContext.fsGroup }}
           securityContext:
             runAsUser: 0
           {{- if .Values.volumePermissions.resources }}
@@ -102,7 +102,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: data
-              mountPath: /bitnami/opensearch/data
+              mountPath: /opensearch/data
         {{- end }}
         {{- include "opensearch.copy-default-plugins.initContainer" (dict "component" "data" "context" $) | nindent 8 }}
         {{- if .Values.data.initContainers }}
@@ -226,7 +226,7 @@ spec:
           readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.data.readinessProbe "enabled") "context" $) | nindent 12 }}
             exec:
               command:
-                - /opt/bitnami/scripts/opensearch/healthcheck.sh
+                - /opt/opensearch/healthcheck.sh
           {{- end }}
           {{- end }}
           {{- if .Values.data.resources }}
@@ -239,36 +239,36 @@ spec:
               mountPath: /tmp
               subPath: tmp-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch/config
+              mountPath: /opt/opensearch/config
               subPath: app-conf-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch/tmp
+              mountPath: /opt/opensearch/tmp
               subPath: app-tmp-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch/logs
+              mountPath: /opt/opensearch/logs
               subPath: app-logs-dir
             - name: empty-dir
-              mountPath: /opt/bitnami/opensearch/plugins
+              mountPath: /opt/opensearch/plugins
               subPath: app-plugins-dir
             - name: data
-              mountPath: /bitnami/opensearch/data
+              mountPath: /opensearch/data
             {{- if and .Values.usePasswordFiles .Values.security.enabled }}
             - name: opensearch-secrets
-              mountPath: /opt/bitnami/opensearch/secrets
+              mountPath: /opt/opensearch/secrets
             {{- end }}
             {{- if .Values.config }}
-            - mountPath: /opt/bitnami/opensearch/config/opensearch.yml
+            - mountPath: /opt/opensearch/config/opensearch.yml
               name: config
               subPath: opensearch.yml
             {{- end }}
             {{- if .Values.extraConfig }}
-            - mountPath: /opt/bitnami/opensearch/config/my_opensearch.yml
+            - mountPath: /opt/opensearch/config/my_opensearch.yml
               name: config
               subPath: my_opensearch.yml
             {{- end }}
             {{- if .Values.security.enabled }}
             - name: opensearch-certificates
-              mountPath: /opt/bitnami/opensearch/config/certs
+              mountPath: /opt/opensearch/config/certs
               readOnly: true
             {{- end }}
             {{- if .Values.initScripts }}
